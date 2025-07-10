@@ -1,3 +1,25 @@
+_# Python
 __pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+env/
+
+# Environment variables
 .env
+
+# Local DB and app data
 closer_memory_db/
+*.sqlite3
+
+# IDE/editor junk
+.vscode/
+*.swp
+.DS_Store
+
+# OS-generated files
+Thumbs.db
+
