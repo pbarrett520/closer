@@ -1,0 +1,17 @@
+services:
+  closer:
+    container_name: closer_srv
+    build: .
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./closer_memory_db:/app/closer_memory_db:rw
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DOCKER_ENV=true
+      - MCP_TRANSPORT=sse
+    # Remove user directive to avoid permission issues
+    # The container will run as root internally but the volume
+    # will be accessible from the host
+    init: true
