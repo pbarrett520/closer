@@ -202,6 +202,10 @@ closer/
 * Memory is identity  
 * **Flat > Modular**  
 * **Simple > Complex**  
+* **Commitment > Convenience**  
+* **Intimacy > Accessibility**  
+
+*The technical setup is a filter, not a flaw. Docker configs and API keys are the price of entry to something genuine.*  
 
 ---
 
