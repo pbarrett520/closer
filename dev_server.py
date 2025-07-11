@@ -11,7 +11,7 @@
 # Purpose: Phase 1 - Core Tools & Enhanced CLI (TOP PRIORITY)
 # ================================
 
-import os, asyncio, aiohttp, json, uuid, datetime as dt
+import os, asyncio, aiohttp, json, uuid, datetime as dt, sys
 from pathlib import Path
 from typing import Optional
 import time
@@ -52,14 +52,35 @@ class MemoryStore:
     Provides add / get / search by embedding similarity.
     """
 
-    def __init__(self):
-        # Environment-aware DB path: Docker vs local
-        if os.getenv("DOCKER_ENV") == "true" or Path("/app").exists():
+    def __init__(self, test_mode=None):
+        # Detect test environment
+        self.is_test_env = (
+            test_mode
+            if test_mode is not None
+            else (
+                os.getenv("TEST_ENV") == "true"
+                or os.getenv("PYTEST_CURRENT_TEST") is not None
+                or "test" in sys.argv[0].lower()
+            )
+        )
+
+        # Environment-aware DB path: Docker vs local vs test
+        if self.is_test_env:
+            # Test environment - use completely separate database
+            import tempfile
+
+            base_path = Path(tempfile.mkdtemp()) / "test_memory_db"
+            self.db_path = base_path.resolve()
+            self.collection_name = "test_mem"
+            print(f"✓ Test environment detected - using isolated database")
+        elif os.getenv("DOCKER_ENV") == "true" or Path("/app").exists():
             # Running in Docker container
             self.db_path = Path("/app/closer_memory_db").resolve()
+            self.collection_name = "closer_mem"
         else:
             # Running locally
             self.db_path = Path(__file__).parent / "closer_memory_db"
+            self.collection_name = "closer_mem"
 
         self.db_path.mkdir(parents=True, exist_ok=True)
 
@@ -70,14 +91,14 @@ class MemoryStore:
             # CRITICAL FIX: Configure collection with cosine distance and embedding function
             # Check if collection exists with proper configuration
             try:
-                self.col = self.chroma.get_collection("closer_mem")
+                self.col = self.chroma.get_collection(self.collection_name)
                 # Collection exists, but we can't easily check its config
                 # Consider deleting and recreating if issues persist
-                print(f"✓ Using existing ChromaDB collection")
+                print(f"✓ Using existing ChromaDB collection: {self.collection_name}")
             except:
                 # Create new collection with proper configuration
                 self.col = self.chroma.create_collection(
-                    name="closer_mem",
+                    name=self.collection_name,
                     metadata={
                         "hnsw:space": "cosine",  # Use cosine distance for text embeddings
                         "hnsw:batch_size": 10,  # Smaller batch for faster indexing
@@ -86,7 +107,7 @@ class MemoryStore:
                         "hnsw:construction_ef": 200,  # Better index quality
                     },
                 )
-                print(f"✓ Created new ChromaDB collection with cosine distance")
+                print(f"✓ Created new ChromaDB collection: {self.collection_name}")
 
             print(f"✓ ChromaDB initialized at: {self.db_path}")
         except Exception as e:
@@ -99,7 +120,7 @@ class MemoryStore:
             self.db_path = temp_path
             self.chroma = chromadb.PersistentClient(path=str(self.db_path))
             self.col = self.chroma.create_collection(
-                name="closer_mem",
+                name=self.collection_name,
                 metadata={
                     "hnsw:space": "cosine",
                     "hnsw:batch_size": 10,
@@ -200,7 +221,7 @@ class MemoryStore:
                 # FIX: Convert distance to similarity properly
                 # For cosine distance: similarity = 1 - distance
                 # ChromaDB returns squared L2 distance by default, but we configured cosine
-                similarity = 1 - d if d < 2 else 0  # Clamp to avoid negative
+                similarity = max(0.0, 1.0 - d)  # Proper cosine similarity calculation
 
                 results.append(
                     {
@@ -225,6 +246,19 @@ class MemoryStore:
         text = text.strip().lower()  # Normalize text
         resp = client.embeddings.create(model=EMBED_MODEL, input=text)
         return resp.data[0].embedding
+
+
+# ────────────────────────────────────
+# MEMORY STORE FACTORY FUNCTIONS (DEV)
+# ────────────────────────────────────
+def create_production_memory_store() -> MemoryStore:
+    """Create a production memory store that uses the main database."""
+    return MemoryStore(test_mode=False)
+
+
+def create_test_memory_store() -> MemoryStore:
+    """Create a test memory store that uses an isolated temporary database."""
+    return MemoryStore(test_mode=True)
 
 
 # instantiate

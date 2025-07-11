@@ -1,4 +1,4 @@
-_# Python
+# Python
 __pycache__/
 *.py[cod]
 *.pyo
@@ -13,6 +13,7 @@ env/
 
 # Local DB and app data
 closer_memory_db/
+closer_memory_db_backup_*/
 *.sqlite3
 
 # IDE/editor junk
