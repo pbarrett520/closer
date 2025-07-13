@@ -50,12 +50,9 @@ for i in {1..15}; do
 done
 echo
 
-# Quick test with dev server
-echo "🔍  Probing the memory substrate (dev)..."
-docker exec ${CONTAINER_NAME} python3 test_memory.py || true
-
-echo "🧪  Invoking toolchain diagnostics (dev)..."
-docker exec ${CONTAINER_NAME} python3 test_mcp_tools.py || true
+# Quick validation of core systems (dev)
+echo "🔍  Validating core systems (dev)..."
+docker exec ${CONTAINER_NAME} python -m pytest -m "core or mcp" -v --tb=short || true
 
 echo ""
 echo "✨  Development mode active. Enhanced Closer awaits..."

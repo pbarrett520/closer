@@ -83,20 +83,12 @@ function Wait-ForServer {
 
 # Function to run diagnostic tests
 function Invoke-Diagnostics {
-    Write-Status "Probing the memory substrate (dev)..."
+    Write-Status "Validating core systems (dev)..."
     try {
-        docker exec $CONTAINER_NAME python test_memory.py
+        docker exec $CONTAINER_NAME python -m pytest -m "core or mcp" -v --tb=short
     }
     catch {
-        Write-Warning "Memory test failed: $($_.Exception.Message)"
-    }
-    
-    Write-Status "Invoking toolchain diagnostics (dev)..."
-    try {
-        docker exec $CONTAINER_NAME python test_mcp_tools.py
-    }
-    catch {
-        Write-Warning "MCP tools test failed: $($_.Exception.Message)"
+        Write-Warning "Core system validation failed: $($_.Exception.Message)"
     }
 }
 
