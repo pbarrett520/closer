@@ -163,12 +163,27 @@ Rich terminal output with:
 
 ### Memory Management
 ```bash
-# View memory statistics
-docker exec closer_srv python test_memory.py
+# Run comprehensive test suite (local, no Docker needed)
+python -m pytest -m "not system" -v
 
-# Test tool integration  
-docker exec closer_srv python test_mcp_tools.py
+# Run specific test categories
+python -m pytest -m core -v      # Core memory tests (12 tests)
+python -m pytest -m mcp -v       # MCP tool tests (9 tests)
+python -m pytest -m isolation -v # Environment tests (8 tests)
+
+# Run all tests including Docker system health
+python -m pytest -v              # Requires Docker containers running
+
+# Test with specific focus
+python -m pytest -m slow -v      # Only long-running tests
+python -m pytest -k "memory" -v  # Tests matching "memory" pattern
 ```
+
+**Test Suite Structure:**
+- `test_memory_core_pytest.py` - Core memory functionality validation
+- `test_mcp_tools_pytest.py` - MCP tool integration testing
+- `test_isolation_pytest.py` - Environment isolation verification
+- `test_system_health_pytest.py` - Docker system health checks
 
 ### Custom Models
 Configure any OpenAI-compatible endpoint in `.env`:
@@ -194,9 +209,15 @@ Closer embraces **AI-assisted development**. The flat structure makes it easy fo
 
 1. **Copy & Iterate**: `cp server.py dev_server.py`
 2. **Enhance**: Add new tools to development files
-3. **Test**: Create focused test files (`test_reflect.py`)
+3. **Test**: Use pytest framework with focused test modules
 4. **Integrate**: Verify compatibility with production
 5. **Promote**: Replace production files when stable
+
+**Testing Best Practices:**
+- Use `python -m pytest -m "not system" -v` for local development
+- Write tests for new features following existing patterns in `test_*_pytest.py`
+- Add appropriate markers (@pytest.mark.core, @pytest.mark.mcp, etc.)
+- Use fixtures from `conftest.py` for consistent test environments
 
 See `project.md` for detailed development philosophy and AI collaboration patterns.
 
@@ -239,11 +260,33 @@ See `project.md` for detailed development philosophy and AI collaboration patter
 - Verified case preservation: "Fallujah" vs "fallujah" show different scores
 - Proved contextual queries now excellent: "confesses killed man M14 rifle..." → 0.901 relevance
 
+**🔧 Test Suite Migration (COMPLETED THIS SESSION ✅):**
+- **Professional Framework**: Migrated from 6 individual test files to pytest framework
+- **41 Comprehensive Tests**: 29 passing locally, 12 system tests for Docker
+- **Environment Fixes**: Resolved conda vs system Python conflicts on macOS
+- **Platform Compatibility**: Fixed temporary directory detection for cross-platform testing
+- **Test Organization**: Categorized tests with markers (core, mcp, isolation, system, slow)
+- **Maintainable Structure**: Added `conftest.py` fixtures and `pytest.ini` configuration
+- **Backward Compatibility**: Maintained all existing functionality during migration
+
+**Test Command Examples:**
+```bash
+# Run all local tests (no Docker needed)
+python -m pytest -m "not system" -v
+
+# Run specific categories
+python -m pytest -m core -v      # Core memory tests
+python -m pytest -m mcp -v       # MCP tool tests
+python -m pytest -m isolation -v # Environment tests
+```
+
 **💡 Key Insights:**
 - Small changes in text processing can drastically affect relevance scores
 - Test-driven development revealed baseline problems we didn't know existed
 - Minimal, targeted fixes are more stable than complex refactors
 - Automated cleanup prevents filesystem clutter from accumulating
+- Professional test frameworks provide better organization and maintainability
+- Environment isolation is crucial for consistent cross-platform testing
 
 ## 🆘 Troubleshooting
 

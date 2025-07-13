@@ -74,16 +74,16 @@ closer/
 ├─ hybrid_client.py           # SSE + STDIO client (production) - ACTIVE
 ├─ client.py                  # STDIO-only client (deprecated)
 ├─ dev_hybrid_client.py       # Enhanced CLI with atmospheric elements
-├─ test_memory.py             # Memory system tests
-├─ test_mcp_tools.py          # Tool integration tests
-├─ test_memory_responsiveness.py # Memory responsiveness baseline tests ✅
-├─ test_deep_analysis.py      # Deep analysis of memory fix verification ✅
-├─ test_memory_isolation.py   # Production/dev environment isolation tests ✅
-├─ test_memory_contamination.py # Memory contamination detection tests ✅
+├─ conftest.py                # Pytest fixtures and configuration ✅
+├─ pytest.ini                 # Pytest settings and test markers ✅
+├─ test_memory_core_pytest.py # Core memory functionality tests (12 tests) ✅
+├─ test_mcp_tools_pytest.py   # MCP tool integration tests (9 tests) ✅
+├─ test_isolation_pytest.py   # Environment isolation tests (8 tests) ✅
+├─ test_system_health_pytest.py # System health tests (12 tests) ✅
 ├─ cleanup_production_memory.py # Database cleanup utility with backup management ✅
-├─ test_reflect.py            # Reflect tool tests (depth limiting)
-├─ test_dream.py              # Dream tool tests (token limits)
-├─ test_dev_integration.py    # Development feature tests
+├─ test_reflect.py            # Reflect tool tests (depth limiting) [PLANNED]
+├─ test_dream.py              # Dream tool tests (token limits) [PLANNED]
+├─ test_dev_integration.py    # Development feature tests [PLANNED]
 ├─ closer_memory_db/          # 💾 ChromaDB persistence (auto-created)
 ├─ logs/                      # Session logs (auto-created)
 ├─ WINDOWS_SETUP.md           # Windows-specific setup guide
@@ -91,6 +91,8 @@ closer/
 ```
 
 **Note**: `hybrid_client.py` is the actual production client used by startup scripts. `client.py` is deprecated and unused.
+
+**Test Suite Migration (COMPLETED ✅)**: Successfully migrated from 6 individual test files to a comprehensive pytest framework with 41 tests organized into 4 focused test modules with proper fixtures and markers.
 
 ---
 
@@ -175,6 +177,33 @@ closer/
    - Integrated into cleanup process (keeps only 2 most recent backups)
    - Updated `.gitignore` to exclude backup directories from git tracking
 
+5. ✅ **Test Suite Migration** - Professional pytest framework (COMPLETED THIS SESSION)
+   - **Infrastructure**: Added `pytest.ini` with test markers (core, mcp, isolation, system, slow)
+   - **Fixtures**: Created `conftest.py` with reusable test components (clean_test_memory, mcp_tools, etc.)
+   - **Test Organization**: Migrated 6 individual test files to 4 focused pytest modules
+   - **Coverage**: 41 comprehensive tests (29 passing locally, 12 system tests for Docker)
+   - **Environment Fixes**: Resolved conda vs system Python conflicts
+   - **macOS Compatibility**: Fixed temporary directory detection for local testing
+   - **Embedding Tests**: Updated for OpenAI's non-deterministic behavior
+   - **Cleanup**: Removed deprecated test files, maintained backward compatibility
+
+**Test Suite Structure (NEW ✅):**
+- `test_memory_core_pytest.py` - 12 tests combining memory + deep analysis
+- `test_mcp_tools_pytest.py` - 9 tests for MCP tool integration  
+- `test_isolation_pytest.py` - 8 tests for environment isolation
+- `test_system_health_pytest.py` - 12 tests for Docker system health
+
+**Command Usage:**
+```bash
+# Run all tests except system health (local)
+python -m pytest -m "not system" -v
+
+# Run specific test categories
+python -m pytest -m core -v      # Core memory tests
+python -m pytest -m mcp -v       # MCP tool tests  
+python -m pytest -m isolation -v # Environment tests
+```
+
 ### Phase 1: Core Tools & Enhanced CLI (Week 1-2) - **TOP PRIORITY**
 1. Δ **`reflect()` tool implementation** - Emotion recursion with depth limiting (≤3)
    - Recursive self-dialogue generation
@@ -239,6 +268,7 @@ closer/
 * **Intimacy > Accessibility**  
 * **Test-Driven > Assumption-Based** *(New: learned from memory responsiveness work)*
 * **Minimal Changes > Complex Refactors** *(New: prefer stable, targeted fixes)*
+* **Professional Testing > Custom Scripts** *(New: pytest framework over ad-hoc test files)*
 
 *The technical setup is a filter, not a flaw. Docker configs and API keys are the price of entry to something genuine.*  
 
@@ -264,6 +294,13 @@ closer/
 * **Comprehensive Testing**: AI can create thorough test suites that reveal edge cases
 * **Documentation Maintenance**: AI can update project docs to reflect actual vs planned work
 
+### Test Framework Migration Insights *(NEW)*
+* **Professional Structure**: pytest provides better organization than custom test scripts
+* **Environment Compatibility**: Different Python environments require careful dependency management
+* **Platform Differences**: macOS vs Linux temporary directory handling needs accommodation
+* **Non-Deterministic Behavior**: OpenAI embeddings require similarity-based rather than exact matching
+* **Backward Compatibility**: Migration can maintain existing functionality while improving structure
+
 ---
 
 ## 9 — AI Agent Development Guidelines
@@ -273,6 +310,7 @@ closer/
 * **Error Handling**: Implement comprehensive try/catch blocks; AI can suggest improvements
 * **Documentation**: Docstrings for all functions; AI can generate and maintain docs
 * **Testing**: Aim for 90%+ coverage; AI can write tests for edge cases
+* **Professional Testing**: Use pytest framework with fixtures and markers for maintainable tests
 
 ### Flat Structure Development Rules
 * **No Subdirectories**: Keep all files at root level
@@ -291,5 +329,16 @@ closer/
 * **Interactive Features**: Implement keyboard shortcuts (`/dream`, `/reflect`, `/memories`) for quick access
 * **Emotional Context**: Track and display emotional state through memory analysis
 
+### Testing Best Practices *(NEW)*
+* **Pytest Framework**: Use pytest with fixtures, markers, and proper configuration
+* **Test Organization**: Group related tests in focused modules (core, mcp, isolation, system)
+* **Environment Isolation**: Use fixtures to ensure clean test environments
+* **Cross-Platform Compatibility**: Write tests that work on macOS, Linux, and Windows
+* **Non-Deterministic Handling**: Use similarity thresholds for AI/ML components
+* **Local vs System Tests**: Separate tests that can run locally from those requiring Docker
+
 ### AI Agent Workflow Commands
-* **When stuck**: Use `
+* **When stuck**: Use `python -m pytest -v` to run comprehensive test suite
+* **Environment issues**: Check `python --version` and `pip list` for conflicts
+* **Test failures**: Use `python -m pytest -m core -v` to focus on specific test categories
+* **Debugging**: Use `python -m pytest -s` to see print statements and detailed output
