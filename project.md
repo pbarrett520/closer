@@ -178,20 +178,30 @@ closer/
    - Updated `.gitignore` to exclude backup directories from git tracking
 
 5. ✅ **Test Suite Migration** - Professional pytest framework (COMPLETED THIS SESSION)
-   - **Infrastructure**: Added `pytest.ini` with test markers (core, mcp, isolation, system, slow)
-   - **Fixtures**: Created `conftest.py` with reusable test components (clean_test_memory, mcp_tools, etc.)
-   - **Test Organization**: Migrated 6 individual test files to 4 focused pytest modules
-   - **Coverage**: 41 comprehensive tests (29 passing locally, 12 system tests for Docker)
+   - **Infrastructure**: Added `pytest.ini` with test markers (core, mcp, isolation, system, slow, dream, reflect, integration)
+   - **Fixtures**: Created `conftest.py` with reusable test components (clean_test_memory, mcp_tools, dev_mcp_tools, etc.)
+   - **Test Organization**: Migrated 6 individual test files to 6 focused pytest modules (72 total tests)
+   - **Coverage**: Comprehensive test suite with multiple categories:
+     - `test_memory_core_pytest.py` - 12 core memory tests
+     - `test_mcp_tools_pytest.py` - 9 MCP tool integration tests
+     - `test_isolation_pytest.py` - 8 environment isolation tests (FIXED contamination issue)
+     - `test_system_health_pytest.py` - 12 system health tests
+     - `test_dream_pytest.py` - 17 dream tool functionality tests
+     - `test_reflect_pytest.py` - 16 reflect tool functionality tests
+     - `test_dev_integration_pytest.py` - 10 end-to-end integration tests
    - **Environment Fixes**: Resolved conda vs system Python conflicts
    - **macOS Compatibility**: Fixed temporary directory detection for local testing
-   - **Embedding Tests**: Updated for OpenAI's non-deterministic behavior
-   - **Cleanup**: Removed deprecated test files, maintained backward compatibility
+   - **Test Data Isolation**: Fixed critical bug where tests were writing garbage to production database
+   - **API Mocking**: Added comprehensive OpenAI API mocking to prevent timeouts and real API calls
 
-**Test Suite Structure (NEW ✅):**
+**Test Suite Structure (EXPANDED ✅):**
 - `test_memory_core_pytest.py` - 12 tests combining memory + deep analysis
 - `test_mcp_tools_pytest.py` - 9 tests for MCP tool integration  
-- `test_isolation_pytest.py` - 8 tests for environment isolation
+- `test_isolation_pytest.py` - 8 tests for environment isolation (FIXED production contamination)
 - `test_system_health_pytest.py` - 12 tests for Docker system health
+- `test_dream_pytest.py` - 17 tests for dream functionality (token limits, quality, OpenAI compatibility)
+- `test_reflect_pytest.py` - 16 tests for reflection functionality (depth limiting, recursion prevention)
+- `test_dev_integration_pytest.py` - 10 integration tests (end-to-end with API mocking)
 
 **Command Usage:**
 ```bash
@@ -204,28 +214,72 @@ python -m pytest -m mcp -v       # MCP tool tests
 python -m pytest -m isolation -v # Environment tests
 ```
 
-### Phase 1: Core Tools & Enhanced CLI (Week 1-2) - **TOP PRIORITY**
-1. Δ **`reflect()` tool implementation** - Emotion recursion with depth limiting (≤3)
-   - Recursive self-dialogue generation
-   - Memory integration for emotional context
-   - Depth enforcement with comprehensive tests
-   - Poetic, introspective response style
+### Phase 1: Core Tools & Enhanced CLI (Week 1-2) - **COMPLETED ✅**
+1. ✅ **`reflect()` tool implementation** - Emotion recursion with depth limiting (≤3)
+   - ✅ Recursive self-dialogue generation with OpenAI-compatible API
+   - ✅ Memory integration for emotional context
+   - ✅ Depth enforcement with comprehensive tests (16 tests in `test_reflect_pytest.py`)
+   - ✅ Poetic, introspective response style with depth indicators
 
-2. Δ **`dream()` tool implementation** - Poetic memory remix (≤350 tokens)
-   - Memory querying and narrative weaving
-   - Atmospheric, nocturnal language generation
-   - Theme-based dream focusing
-   - Sensory, uncanny atmosphere creation
+2. ✅ **`dream()` tool implementation** - Poetic memory remix (≤350 tokens)
+   - ✅ Memory querying and narrative synthesis using existing OpenAI client
+   - ✅ Atmospheric, nocturnal language generation with tiktoken token limiting
+   - ✅ Theme-based dream focusing with synthesis depth options
+   - ✅ Token limit enforcement (≤350 tokens) with comprehensive tests (17 tests in `test_dream_pytest.py`)
 
-3. Δ **Enhanced CLI experience** - "Cooler" terminal interface
-   - Atmospheric typing indicators with Rich animations
-   - Memory visualization and emotional context display
-   - Interactive keyboard shortcuts (`/dream`, `/reflect`, `/memories`)
-   - Enhanced streaming with progress indicators
-   - Emotional state tracking and visualization
+3. ✅ **Enhanced CLI experience** - "Cooler" terminal interface
+   - ✅ Atmospheric typing indicators with Rich animations in `dev_hybrid_client.py`
+   - ✅ Memory visualization and emotional context display
+   - ✅ Interactive keyboard shortcuts (`/dream`, `/reflect`, `/memories`, `/quit`)
+   - ✅ Enhanced streaming with progress indicators
+   - ✅ Development server integration with comprehensive test coverage (10 integration tests)
 
-### Phase 2: Foundation (Week 3-4)
-4. Δ **Volume mount implementation** - Host-mounted ChromaDB persistence
+## 🚨 CRITICAL ISSUE: Memory Persistence Broken (Session End)
+
+**URGENT BUG - Memory not persisting between dev server sessions**
+
+### Current Status: BROKEN ❌
+- User says "My name is Dave" → saves successfully 
+- User quits and restarts dev server → memory not recalled
+- Query for "user's name" returns no results despite successful save
+
+### Root Cause Analysis Completed:
+1. ✅ **Environment Detection Fixed**: Removed faulty `"test" in sys.argv[0].lower()` check that detected `dev_server.py` as test file
+2. ✅ **Production Factory Used**: Replaced `memory = MemoryStore()` with `memory = create_production_memory_store()`
+3. ✅ **Debug Logging Added**: Shows correct production database path and settings
+4. ✅ **Volume Mounting Verified**: Docker correctly mounts `./closer_memory_db:/app/closer_memory_db:rw`
+
+### Test Results:
+- ✅ Container test shows memory persistence WORKS (added test memory index 15)
+- ✅ Database path correct: `/app/closer_memory_db`
+- ✅ Test mode: `False` (production)
+- ✅ Collection: `closer_mem` (production)
+
+### Hypothesis:
+The underlying memory persistence mechanism is now working correctly, but there may be:
+1. Transient API errors during save operations that aren't visible to user
+2. Race conditions between save and container shutdown
+3. ChromaDB commit timing issues
+4. Error handling that silently fails
+
+### Next Session Action Items:
+1. **PRIORITY 1**: Test memory persistence with detailed error logging
+2. Add transaction verification to save operations
+3. Implement retry logic for failed saves
+4. Add user-visible confirmation of successful memory saves
+5. Test with actual user session to verify the fix works end-to-end
+
+### Development Files Updated This Session:
+- ✅ `dev_server.py`: Fixed environment detection + production factory
+- ✅ `test_isolation_pytest.py`: Fixed test contamination issue
+- ✅ Database cleanup: Removed 13 contaminated test entries
+
+**This is a critical user experience issue that must be resolved before any other development work.**
+
+---
+
+### Phase 2: Foundation (Week 3-4) - **BLOCKED BY MEMORY PERSISTENCE**
+4. ✅ **Volume mount implementation** - Host-mounted ChromaDB persistence (IMPLEMENTED BUT BROKEN)
 5. Δ **Token counter integration** - Live cost display in CLI stream  
 6. Δ **Tone dial system** - Flag `--tone serene|intense` + prompt loader
 
