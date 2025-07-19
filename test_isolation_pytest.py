@@ -2,6 +2,10 @@
 """
 Pytest version of environment isolation tests
 Converted from test_memory_isolation.py with fixes for failing tests
+
+CRITICAL WARNING: These tests MUST NEVER write to production database!
+All tests should use test_mode=True or create separate test stores.
+Writing to production will contaminate real user data.
 """
 import pytest
 import os
@@ -66,49 +70,49 @@ def test_collection_isolation():
 
 @pytest.mark.isolation
 def test_data_isolation():
-    """Test that test and production data don't cross-contaminate"""
+    """Test that different test stores don't cross-contaminate"""
     from server import MemoryStore
     
-    # Create fresh, isolated stores
-    test_store = MemoryStore(test_mode=True)
-    prod_store = MemoryStore(test_mode=False)
+    # Create TWO separate test stores to simulate isolation
+    # This avoids writing to production database entirely
+    test_store_a = MemoryStore(test_mode=True)
+    test_store_b = MemoryStore(test_mode=True)
     
     # Add unique data to each store
-    test_memory = "TEST_UNIQUE_MEMORY_12345"
-    prod_memory = "PROD_UNIQUE_MEMORY_67890"
+    memory_a = "ISOLATION_TEST_STORE_A_UNIQUE_12345"
+    memory_b = "ISOLATION_TEST_STORE_B_UNIQUE_67890"
     
-    test_idx = test_store.add(test_memory)
-    prod_idx = prod_store.add(prod_memory)
+    idx_a = test_store_a.add(memory_a)
+    idx_b = test_store_b.add(memory_b)
     
     # Verify data is in the correct stores
-    assert test_store.get(test_idx) == test_memory, "Test memory should be in test store"
-    assert prod_store.get(prod_idx) == prod_memory, "Production memory should be in production store"
+    assert test_store_a.get(idx_a) == memory_a, "Store A should contain its own memory"
+    assert test_store_b.get(idx_b) == memory_b, "Store B should contain its own memory"
     
-    # Verify data is NOT in the wrong stores
-    # NOTE: This is the test that was failing before - let's fix it
-    # The issue was that stores with different databases might still share indices
-    # We should test that the CONTENT is isolated, not just the indices
-    
+    # Verify stores are properly isolated from each other
     # Query for unique content to verify isolation
-    test_results = test_store.query("TEST_UNIQUE_MEMORY_12345", k=5)
-    prod_results = prod_store.query("PROD_UNIQUE_MEMORY_67890", k=5)
+    results_a = test_store_a.query("ISOLATION_TEST_STORE_A_UNIQUE", k=5)
+    results_b = test_store_b.query("ISOLATION_TEST_STORE_B_UNIQUE", k=5)
     
     # Each store should only find its own data
-    test_found_own = any("TEST_UNIQUE" in r.get("text", "") for r in test_results)
-    prod_found_own = any("PROD_UNIQUE" in r.get("text", "") for r in prod_results)
+    found_a_in_a = any("STORE_A_UNIQUE" in r.get("text", "") for r in results_a)
+    found_b_in_b = any("STORE_B_UNIQUE" in r.get("text", "") for r in results_b)
     
-    assert test_found_own, "Test store should find its own test data"
-    assert prod_found_own, "Production store should find its own production data"
+    assert found_a_in_a, "Store A should find its own test data"
+    assert found_b_in_b, "Store B should find its own test data"
     
-    # Cross-contamination check - search for the other store's data
-    test_results_cross = test_store.query("PROD_UNIQUE_MEMORY_67890", k=10)
-    prod_results_cross = prod_store.query("TEST_UNIQUE_MEMORY_12345", k=10)
+    # Cross-contamination check - each store should NOT find the other's data
+    cross_results_a = test_store_a.query("ISOLATION_TEST_STORE_B_UNIQUE", k=10)
+    cross_results_b = test_store_b.query("ISOLATION_TEST_STORE_A_UNIQUE", k=10)
     
-    test_found_prod = any("PROD_UNIQUE" in r.get("text", "") for r in test_results_cross)
-    prod_found_test = any("TEST_UNIQUE" in r.get("text", "") for r in prod_results_cross)
+    found_b_in_a = any("STORE_B_UNIQUE" in r.get("text", "") for r in cross_results_a)
+    found_a_in_b = any("STORE_A_UNIQUE" in r.get("text", "") for r in cross_results_b)
     
-    assert not test_found_prod, "Test store should not find production data"
-    assert not prod_found_test, "Production store should not find test data"
+    assert not found_b_in_a, "Store A should not find Store B's data"
+    assert not found_a_in_b, "Store B should not find Store A's data"
+    
+    # Additional verification: stores should use different paths
+    assert test_store_a.db_path != test_store_b.db_path, "Each test store should use different database paths"
 
 
 @pytest.mark.isolation

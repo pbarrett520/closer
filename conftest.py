@@ -81,6 +81,36 @@ def mcp_tools():
         pytest.skip(f"Could not import MCP tools: {e}")
 
 
+@pytest.fixture
+def dev_mcp_tools():
+    """
+    Import development MCP tools (including dream and reflect)
+    """
+    try:
+        from dev_server import save_memory, query_memory, web_search, dream, reflect, memory, BRAVE_TOKEN
+        
+        # Extract actual callable functions from MCP FunctionTool wrappers
+        def extract_function(tool):
+            if hasattr(tool, 'fn'):
+                return tool.fn
+            elif hasattr(tool, '__call__'):
+                return tool
+            else:
+                return tool
+        
+        return {
+            'save_memory': extract_function(save_memory),
+            'query_memory': extract_function(query_memory), 
+            'web_search': extract_function(web_search),
+            'dream': extract_function(dream),
+            'reflect': extract_function(reflect),
+            'memory': memory,
+            'brave_token': BRAVE_TOKEN
+        }
+    except ImportError as e:
+        pytest.skip(f"Could not import dev MCP tools: {e}")
+
+
 @pytest.fixture(scope="session")
 def docker_environment():
     """
